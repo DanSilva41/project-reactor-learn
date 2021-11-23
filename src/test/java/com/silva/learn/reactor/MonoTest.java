@@ -1,7 +1,5 @@
 package com.silva.learn.reactor;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
@@ -141,6 +139,47 @@ class MonoTest {
 
         StepVerifier.create(publisher)
                 .expectNextCount(0)
+                .verifyComplete();
+    }
+
+    @Test
+    void monoDoOnError() {
+        Mono<Object> monoError = Mono.error(new IllegalArgumentException("Illeal expected argument"))
+                .doOnError(e -> MonoTest.log.error("Error message: {}", e.getMessage()))
+                .doOnNext(s -> log.info("Executing this doOnNext"))
+                .log();
+
+        StepVerifier.create(monoError)
+                .expectError(IllegalArgumentException.class)
+                .verify();
+    }
+
+    @Test
+    void monoOnErrorResume() {
+        final var name = "Danilo Silva";
+        Mono<Object> monoError = Mono.error(new IllegalArgumentException("Illeal expected argument"))
+                .doOnError(e -> MonoTest.log.error("Error message: {}", e.getMessage()))
+                .onErrorResume(s -> { // Fallback
+                    log.info("Executing this doOnNext");
+                    return Mono.just(name);
+                })
+                .log();
+
+        StepVerifier.create(monoError)
+                .expectNext("Danilo Silva")
+                .verifyComplete();
+    }
+
+    @Test
+    void monoOnErrorReturn() {
+        final var empty = "EMPTY";
+        Mono<Object> monoError = Mono.error(new IllegalArgumentException("Illegal expected argument"))
+                .doOnError(e -> MonoTest.log.error("Error message: {}", e.getMessage()))
+                .onErrorReturn(empty)
+                .log();
+
+        StepVerifier.create(monoError)
+                .expectNext("EMPTY")
                 .verifyComplete();
     }
 }
