@@ -1,5 +1,6 @@
 package com.silva.learn.reactor;
 
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -143,5 +144,34 @@ class FluxTest {
         StepVerifier.create(publisher)
                 .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
                 .verifyComplete();
+    }
+
+    @Test
+    void fluxSubscriberIntervalOne() throws InterruptedException {
+        Flux<Long> interval = Flux.interval(Duration.ofMillis(100))
+                .take(10)
+                .log();
+
+        interval.subscribe(i -> log.info("Number: {}", i));
+
+        Thread.sleep(3000);
+    }
+
+    @Test
+    void fluxSubscriberIntervalTwo() {
+        StepVerifier.withVirtualTime(this::createIntervalOfOneDay)
+                .expectSubscription()
+                .expectNoEvent(Duration.ofHours(25)) // Make sure nothing is being published
+                .thenAwait(Duration.ofDays(1))
+                .expectNext(0L)
+                .thenAwait(Duration.ofDays(1))
+                .expectNext(1L)
+                .thenCancel()
+                .verify();
+    }
+
+    private Flux<Long> createIntervalOfOneDay() {
+        return Flux.interval(Duration.ofDays(1))
+                .log();
     }
 }
