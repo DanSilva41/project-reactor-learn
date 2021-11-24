@@ -1,11 +1,13 @@
 package com.silva.learn.reactor;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
@@ -147,5 +149,38 @@ class OperatorsTest {
                     log.info("Size list: {}", list.size());
                 })
                 .verifyComplete();
+    }
+
+    @Test
+    void switchIfEmptyOperator() {
+        Flux<Object> notEmptyFlux = Flux.empty()
+                .switchIfEmpty(Flux.just("not empty anymore"))
+                .log();
+
+        StepVerifier.create(notEmptyFlux)
+                .expectSubscription()
+                .expectNext("not empty anymore")
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
+    void deferOperator() {
+        Mono<Long> just = Mono.just(System.currentTimeMillis());
+        Mono<Long> defer = Mono.defer(() -> Mono.just(System.currentTimeMillis()));
+
+        just.subscribe(l -> log.info("time: {}", l));
+        just.subscribe(l -> log.info("time: {}", l));
+        just.subscribe(l -> log.info("time: {}", l));
+        just.subscribe(l -> log.info("time: {}", l));
+        log.info("--------------------");
+        defer.subscribe(l -> log.info("time: {}", l));
+        defer.subscribe(l -> log.info("time: {}", l));
+        defer.subscribe(l -> log.info("time: {}", l));
+        defer.subscribe(l -> log.info("time: {}", l));
+
+        final var atomicLong = new AtomicLong();
+        defer.subscribe(atomicLong::set);
+        assertTrue(atomicLong.get() > 0);
     }
 }
