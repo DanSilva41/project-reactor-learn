@@ -219,4 +219,18 @@ class FluxTest {
                 .expectComplete()
                 .verify();
     }
+
+    @Test
+    void connectableFluxAutoConnect() {
+        Flux<Integer> fluxAutoConnet = Flux.range(1, 10)
+                .delayElements(Duration.ofMillis(100))
+                .publish()
+                .autoConnect(2);
+
+        StepVerifier.create(fluxAutoConnet) // First subscribed
+                .then(fluxAutoConnet::subscribe) // Second subscribed
+                .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+                .expectComplete()
+                .verify();
+    }
 }
