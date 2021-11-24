@@ -170,6 +170,10 @@ class FluxTest {
         interval.subscribe(i -> log.info("Number: {}", i));
 
         Thread.sleep(3000);
+
+        StepVerifier.create(interval)
+                .expectNext(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)
+                .verifyComplete();
     }
 
     @Test
@@ -191,7 +195,7 @@ class FluxTest {
     }
 
     @Test
-    void connectableFlux() throws InterruptedException {
+    void connectableFlux() {
         ConnectableFlux<Integer> connectableFlux = Flux.range(1, 10)
                 .delayElements(Duration.ofMillis(100))
                 .publish();
@@ -210,7 +214,8 @@ class FluxTest {
 
         StepVerifier.create(connectableFlux)
                 .then(connectableFlux::connect)
-                .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+                .thenConsumeWhile(i -> i <= 5)
+                .expectNext(6, 7, 8, 9, 10)
                 .expectComplete()
                 .verify();
     }
